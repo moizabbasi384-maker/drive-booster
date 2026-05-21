@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 // ─── Inline SVG Icons ─────────────────────────────────────────────────────────
 
@@ -66,6 +66,14 @@ const IconRefresh = ({ size = 18 }) => (
   </svg>
 );
 
+const IconLink = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+);
+
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const ALL_TAGS = [
@@ -117,6 +125,7 @@ function buildReview(pupilName, instructorName, tags) {
 // ─── Step Indicator ───────────────────────────────────────────────────────────
 
 function StepIndicator({ step }) {
+  if (step === 4) return null; // Hide completely for custom links
   return (
     <div className="flex items-center justify-center gap-3 mb-8">
       {[1, 2].map(n => (
@@ -124,10 +133,10 @@ function StepIndicator({ step }) {
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300
             ${step === n
               ? "bg-violet-500 text-white shadow-lg shadow-violet-500/30"
-              : step > n
+              : step > n || step === 3
               ? "bg-emerald-500 text-white"
               : "bg-white/10 text-white/40"}`}>
-            {step > n ? <IconCheck size={14} /> : n}
+            {(step > n || step === 3) ? <IconCheck size={14} /> : n}
           </div>
           <span className={`text-xs font-medium transition-colors duration-300 hidden sm:inline
             ${step === n ? "text-white" : "text-white/40"}`}>
@@ -135,7 +144,7 @@ function StepIndicator({ step }) {
           </span>
           {n < 2 && (
             <div className={`w-8 h-px mx-1 transition-colors duration-300
-              ${step > n ? "bg-emerald-500" : "bg-white/15"}`} />
+              ${(step > n || step === 3) ? "bg-emerald-500" : "bg-white/15"}`} />
           )}
         </div>
       ))}
@@ -173,11 +182,10 @@ function Step1({ onNext }) {
       <div className="text-center mb-2">
         <h2 className="text-2xl font-bold text-white">Instructor Setup</h2>
         <p className="text-white/50 text-sm mt-1">
-          One-time setup — share the next page with every pupil who passes!
+          Create your personalized link to pass directly to your pupils!
         </p>
       </div>
 
-      {/* Name */}
       <div>
         <label className="block text-xs font-semibold text-white/60 uppercase tracking-widest mb-2">
           Your Name
@@ -194,7 +202,6 @@ function Step1({ onNext }) {
         {errors.name && <p className="text-red-400 text-xs mt-1.5">{errors.name}</p>}
       </div>
 
-      {/* Link */}
       <div>
         <label className="block text-xs font-semibold text-white/60 uppercase tracking-widest mb-2">
           Google Review Short-Link
@@ -209,9 +216,6 @@ function Step1({ onNext }) {
             ${errors.link ? "border-red-500/60 focus:ring-red-500/40" : "border-white/12 focus:ring-violet-500/50 focus:border-violet-500/50"}`}
         />
         {errors.link && <p className="text-red-400 text-xs mt-1.5">{errors.link}</p>}
-        <p className="text-white/30 text-xs mt-2">
-          Find this in your Google Business Profile → Get more reviews.
-        </p>
       </div>
 
       <button
@@ -220,7 +224,7 @@ function Step1({ onNext }) {
           active:bg-violet-700 text-white font-semibold py-4 rounded-xl transition-all duration-200
           shadow-lg shadow-violet-600/30 hover:shadow-violet-500/40 text-sm"
       >
-        Continue to Pupil View
+        Generate Shareable Pupil Link
         <IconChevronRight size={18} />
       </button>
     </div>
@@ -229,12 +233,12 @@ function Step1({ onNext }) {
 
 // ─── Step 2: Pupil Review ─────────────────────────────────────────────────────
 
-function Step2({ instructorName, reviewLink, onBack }) {
+function Step2({ instructorName, reviewLink }) {
   const [pupilName, setPupilName]       = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
   const [review, setReview]             = useState("");
   const [copied, setCopied]             = useState(false);
-  const [phase, setPhase]               = useState("build"); // "build" | "review"
+  const [phase, setPhase]               = useState("build");
 
   const toggleTag = id => {
     setSelectedTags(prev =>
@@ -262,7 +266,6 @@ function Step2({ instructorName, reviewLink, onBack }) {
       setCopied(true);
       setTimeout(() => window.open(reviewLink, "_blank", "noopener,noreferrer"), 600);
     } catch {
-      // Fallback: select text manually
       setCopied(true);
     }
   };
@@ -283,7 +286,6 @@ function Step2({ instructorName, reviewLink, onBack }) {
             <p className="text-violet-400 font-semibold text-lg">{instructorName}</p>
           </div>
 
-          {/* Pupil name */}
           <div>
             <label className="block text-xs font-semibold text-white/60 uppercase tracking-widest mb-2">
               Your First Name (optional)
@@ -299,7 +301,6 @@ function Step2({ instructorName, reviewLink, onBack }) {
             />
           </div>
 
-          {/* Tags */}
           <div>
             <label className="block text-xs font-semibold text-white/60 uppercase tracking-widest mb-3">
               Tap what describes {instructorName}
@@ -328,9 +329,6 @@ function Step2({ instructorName, reviewLink, onBack }) {
                 );
               })}
             </div>
-            {selectedTags.length === 0 && (
-              <p className="text-white/30 text-xs mt-2">Select at least one tag to continue.</p>
-            )}
           </div>
 
           <button
@@ -355,12 +353,8 @@ function Step2({ instructorName, reviewLink, onBack }) {
               {[1,2,3,4,5].map(i => <IconStar key={i} size={18} />)}
             </div>
             <h2 className="text-2xl font-bold text-white">Your Review is Ready!</h2>
-            <p className="text-white/40 text-sm mt-1">
-              Edit if you like, then copy &amp; post it.
-            </p>
           </div>
 
-          {/* Review textarea */}
           <div className="relative">
             <textarea
               value={review}
@@ -380,15 +374,13 @@ function Step2({ instructorName, reviewLink, onBack }) {
             </button>
           </div>
 
-          {/* Info strip */}
           <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-400/20 rounded-xl px-4 py-3">
             <span className="text-lg shrink-0">💡</span>
             <p className="text-amber-200/80 text-xs leading-relaxed">
-              Hit the button below — your review will be <strong className="text-amber-200">copied to your clipboard</strong>, then Google Maps will open so you can paste and post it!
+              Hit the button below — your review will be <strong className="text-amber-200">copied automatically</strong>, then Google Maps will open so you can paste and post it!
             </p>
           </div>
 
-          {/* CTA */}
           <button
             onClick={copyAndOpen}
             className={`w-full flex items-center justify-center gap-2.5 font-semibold py-4 rounded-xl
@@ -411,7 +403,6 @@ function Step2({ instructorName, reviewLink, onBack }) {
             )}
           </button>
 
-          {/* Back to edit tags */}
           <button
             onClick={() => setPhase("build")}
             className="w-full flex items-center justify-center gap-2 text-white/40 hover:text-white/70
@@ -429,20 +420,49 @@ function Step2({ instructorName, reviewLink, onBack }) {
 // ─── Root Page ────────────────────────────────────────────────────────────────
 
 export default function ReviewMultiplierPage() {
-  const [step, setStep]                     = useState(1);
+  const [step, setStep]                     = useState(1); // 1 = Setup, 2 = Pupil View, 3 = Share Link Screen, 4 = Direct Link Pupil Mode
   const [instructorName, setInstructorName] = useState("");
   const [reviewLink, setReviewLink]         = useState("");
+  const [generatedLink, setGeneratedLink]   = useState("");
+  const [linkCopied, setLinkCopied]         = useState(false);
+
+  // Magic Catch: Check if a pupil is arriving via custom URL link
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const insParam = params.get("ins");
+      const lnkParam = params.get("lnk");
+      
+      if (insParam && lnkParam) {
+        setInstructorName(decodeURIComponent(insParam));
+        setReviewLink(decodeURIComponent(lnkParam));
+        setStep(4); // Locks app into pure Student Mode
+      }
+    }
+  }, []);
 
   const handleStep1Next = ({ instructorName: n, reviewLink: l }) => {
     setInstructorName(n);
     setReviewLink(l);
-    setStep(2);
+    
+    if (typeof window !== "undefined") {
+      const baseUrl = window.location.origin;
+      const cleanUrl = `${baseUrl}?ins=${encodeURIComponent(n)}&lnk=${encodeURIComponent(l)}`;
+      setGeneratedLink(cleanUrl);
+    }
+    setStep(3); // Take instructor to success share screen
+  };
+
+  const copyGeneratedLink = () => {
+    navigator.clipboard.writeText(generatedLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
   return (
     <div className="min-h-screen bg-[#0D0D12] bg-[radial-gradient(ellipse_at_top,_#1e1030_0%,_#0D0D12_65%)] px-4 py-10 flex flex-col items-center">
 
-      {/* Brand */}
+      {/* Brand Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 bg-white/6 border border-white/10 rounded-full px-4 py-1.5 mb-4">
           <span className="text-violet-400 text-xs font-semibold uppercase tracking-widest">
@@ -455,50 +475,90 @@ export default function ReviewMultiplierPage() {
             Review Multiplier
           </span>
         </h1>
-        <p className="text-white/40 text-sm mt-2 max-w-xs mx-auto leading-relaxed">
-          Turn every passed test into a glowing 5-star review — in under 60 seconds.
-        </p>
       </div>
 
-      {/* Card */}
+      {/* Main Card Container */}
       <div className="w-full max-w-lg">
         <StepIndicator step={step} />
 
         <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6 sm:p-8
           shadow-2xl shadow-black/50 backdrop-blur-sm">
 
+          {/* 1. Instructor Basic Setup */}
           {step === 1 && (
             <Step1 onNext={handleStep1Next} />
           )}
 
-          {step === 2 && (
-            <>
-              {/* Edit instructor info */}
-              <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/8">
-                <div>
-                  <p className="text-white/40 text-xs">Posting review for</p>
-                  <p className="text-white font-semibold text-sm">{instructorName}</p>
-                </div>
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-violet-400
-                    bg-white/6 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 transition-all duration-150"
-                >
-                  <IconEdit size={12} />
-                  Edit
-                </button>
+          {/* 3. Instructor Link Generator Dashboard */}
+          {step === 3 && (
+            <div className="space-y-6 text-center">
+              <div className="w-12 h-12 bg-emerald-500/20 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto text-xl">
+                🎉
               </div>
-              <Step2
-                instructorName={instructorName}
-                reviewLink={reviewLink}
-                onBack={() => setStep(1)}
-              />
+              <div>
+                <h2 className="text-2xl font-bold text-white">Your Custom Link is Ready!</h2>
+                <p className="text-white/50 text-sm mt-1">
+                  Copy this link and send it to your pupils via WhatsApp/Text after they pass their driving test.
+                </p>
+              </div>
+
+              <div className="bg-black/20 border border-white/8 rounded-xl p-3.5 text-left select-all truncate text-xs font-mono text-violet-300">
+                {generatedLink}
+              </div>
+
+              <button
+                onClick={copyGeneratedLink}
+                className={`w-full flex items-center justify-center gap-2 font-semibold py-4 rounded-xl transition-all duration-200 text-sm shadow-lg
+                  ${linkCopied 
+                    ? "bg-emerald-600 text-white shadow-emerald-600/20" 
+                    : "bg-violet-600 hover:bg-violet-500 text-white shadow-violet-600/30"}`}
+              >
+                {linkCopied ? (
+                  <>
+                    <IconCheck size={18} /> Link Copied to Clipboard!
+                  </>
+                ) : (
+                  <>
+                    <IconLink size={18} /> Copy Shareable Pupil Link
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => setStep(2)}
+                className="w-full text-white/40 hover:text-white/70 text-sm py-2 transition-colors duration-150 flex items-center justify-center gap-1.5"
+              >
+                Preview exactly what students will see <IconChevronRight size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* 2 & 4. Pupil View Mode */}
+          {(step === 2 || step === 4) && (
+            <>
+              {/* Back Link only shows for Admin Previews, completely hidden from real Pupils */}
+              {step === 2 && (
+                <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/8">
+                  <div>
+                    <p className="text-white/40 text-xs">Preview Mode for</p>
+                    <p className="text-white font-semibold text-sm">{instructorName}</p>
+                  </div>
+                  <button
+                    onClick={() => setStep(3)}
+                    className="flex items-center gap-1.5 text-xs text-white/40 hover:text-violet-400
+                      bg-white/6 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 transition-all duration-150"
+                  >
+                    <IconEdit size={12} /> Back to Link
+                  </button>
+                </div>
+              )}
+              <Step2 instructorName={instructorName} reviewLink={reviewLink} />
             </>
           )}
         </div>
 
         <p className="text-center text-white/20 text-xs mt-6">
-          Reviews are generated locally. No data is stored or sent anywhere.
+          Reviews are generated locally. Powered securely by your business track.
         </p>
       </div>
     </div>
